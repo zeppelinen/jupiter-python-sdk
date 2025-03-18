@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "guru-jupiter-sdk"
+version = "0.1.0"
+description = "A Python SDK for the Jupiter Protocol API"
+readme = "README.md"
+requires-python = ">=3.7"
+license = { text = "MIT License" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "httpx>=0.24.0",
+    "solders>=0.18.0",
+    "solana>=0.30.0",
+    "anchorpy>=0.18.0",
+    "construct>=2.10.0",
+    "typing-extensions>=4.5.0",
+    "pytest"
+]
+
+[project.urls]
+Homepage = "https://github.com/zeppelinen/jupiter-python-sdk"
+"Bug Tracker" = "https://github.com/zeppelinen/jupiter-python-sdk/issues"
