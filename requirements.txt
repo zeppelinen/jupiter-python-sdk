@@ -1,8 +1,7 @@
 httpx>=0.24.0
 solders>=0.18.0
 solana>=0.30.0
-spl>=0.3.0
-anchorpy>=0.18.0
+anchorpy @ git+https://github.com/zeppelinen/anchorpy.git@main
 construct>=2.10.0
 typing-extensions>=4.5.0
 pytest
