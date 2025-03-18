@@ -1,21 +1,26 @@
 """
 Jupiter Protocol Python SDK
 """
-from typing import Dict, List, Any, Optional, Union
-
 import base64
-import json
 import time
-import struct
-import httpx
+from typing import Any, Dict, List, Optional, Union
 
-from solders.pubkey import Pubkey
-from solders.keypair import Keypair
-from solders.transaction import VersionedTransaction
-from solders.system_program import transfer, TransferParams
-from solana.rpc.types import TxOpts
+import httpx
+from httpx import Timeout
 from solana.rpc.async_api import AsyncClient
-from solana.rpc.commitment import Processed
+from solana.rpc.types import TxOpts
+from solders import message
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+import solders.instruction
+import anchorpy.utils.transaction
+from solders.solders import AccountMeta, get_associated_token_address, Instruction
+
+from solders.system_program import transfer, TransferParams
+from solders.transaction import VersionedTransaction
+from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, WRAPPED_SOL_MINT
+from spl.token.instructions import close_account, CloseAccountParams, create_associated_token_account, sync_native, \
+    SyncNativeParams
 
 
 class JupiterDCA:
@@ -170,7 +175,7 @@ class JupiterDCA:
             )
 
             # Build and send transaction
-            tx = Transaction()
+            tx = anchorpy.utils.transaction.Transaction()
             for ix in pre_instructions:
                 tx.add(ix)
             tx.add(dca_ix)
@@ -247,7 +252,7 @@ class JupiterDCA:
                 {}
             )
 
-            tx = Transaction()
+            tx = anchorpy.utils.transaction.Transaction()
             tx.add(close_ix)
 
             blockhash = await self.rpc.get_latest_blockhash()
@@ -487,17 +492,17 @@ class JupiterDCA:
         method: str,
         accounts: Dict[str, Pubkey],
         args: Dict[str, Any]
-    ) -> TransactionInstruction:
+    ) -> solders.instruction.Instruction:
         """Build a DCA program instruction.
-        
+
         Args:
             method: Instruction method name
             accounts: Dictionary of account pubkeys
             args: Method arguments
-            
+
         Returns:
-            TransactionInstruction: Ready to add to transaction
-            
+            Instruction: Ready to add to transaction
+
         This builds low-level Solana instructions for the DCA program.
         """
         # Define method layouts
@@ -547,7 +552,7 @@ class JupiterDCA:
             # Pack arguments according to layout
             for field, field_type in layout["layout"].items():
                 value = args.get(field)
-                
+
                 # Handle different field types
                 if field_type == "u64":
                     data += int(value).to_bytes(8, "little")
@@ -591,7 +596,7 @@ class JupiterDCA:
             },
             "closeDca": {
                 "writable": [
-                    "user", "dca", "inAta", "outAta", 
+                    "user", "dca", "inAta", "outAta",
                     "userInAta", "userOutAta"
                 ],
                 "signer": ["user"]
@@ -604,7 +609,7 @@ class JupiterDCA:
             },
             "withdraw": {
                 "writable": [
-                    "user", "dca", "dcaAta", 
+                    "user", "dca", "dcaAta",
                     "userInAta", "userOutAta"
                 ],
                 "signer": ["user"]
@@ -623,12 +628,12 @@ class JupiterDCA:
             })
 
         # Build and return instruction
-        return TransactionInstruction(
+        return Instruction(
             program_id=self.DCA_PROGRAM_ID,
             data=data,
             accounts=account_metas
         )
-    
+
 class Jupiter():
     
     ENDPOINT_APIS_URL = {
@@ -981,10 +986,10 @@ class Jupiter():
         except Exception as e:
             raise Exception(f"Error fetching swap instructions: {str(e)}")
 
-    def _convert_instruction(self, instruction_data: Dict[str, Any]) -> Instruction:
+    def _convert_instruction(self, instruction_data: Dict[str, Any]) -> solders.instruction.Instruction:
         """Convert API instruction format to Solana Instruction object."""
         try:
-            return Instruction(
+            return solders.instruction.Instruction(
                 accounts=[
                     AccountMeta(
                         pubkey=Pubkey.from_string(acct['pubkey']),
@@ -1243,8 +1248,7 @@ class Jupiter():
         tradeHistory = httpx.get(query_tradeHistoryUrl, timeout=Timeout(timeout=30.0)).json()
         return tradeHistory
     
-    async def get_indexed_route_map(
-    ) -> dict:
+    async def get_indexed_route_map() -> dict:
         """
         Retrieve an indexed route map for all the possible token pairs you can swap between.
 
